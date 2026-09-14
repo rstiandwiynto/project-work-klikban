@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ================================================
+   KlikBan Custom Global Styles & Optimizations
+   ================================================ */
+
+/* Force font-display: swap agar teks tampil cepat (mencegah FOIT & mempercepat LCP) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: local('Inter');
+}
+
+:root {
+  --primary: #3B82F6;
+  --secondary: #6366f1;
+  --accent: #EF4444;
+  --warning: #F59E0B;
+  --success: #10B981;
+  --bg: #f9f9ff;
+  --surface: #ffffff;
+  --borderc: #d8d9e3;
+  --textmain: #1b1b1f;
+  --textsub: #44474e;
+}
+
+
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f9f9ff;
+  color: #1b1b1f;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #d8d9e3;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Sidebar transitions */
+.sidebar {
+  transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform; /* GPU acceleration untuk sidebar slide */
+}
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(-100%);
+    z-index: 60;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+.backdrop-panel {
+  transition: opacity .2s ease;
+}
+
+.board-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+.board-col {
+  min-width: 280px;
+}
+@media (min-width: 1024px) {
+  .board-col {
+    min-width: 0;
+  }
+}
+
+.view {
+  animation: viewIn .18s ease-out;
+  will-change: opacity, transform;
+}
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-panel {
+  animation: modalIn .18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.priority-swatch {
+  transition: box-shadow .12s ease, transform .12s ease;
+}
+.priority-swatch:hover {
+  transform: translateY(-1px);
+}
+.priority-swatch.selected {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--ring-color, #3B82F6);
+}
+
+.status-option:hover:not(.is-current) {
+  border-color: #3B82F6;
+  background-color: #eff6ff;
+}
+.progress-ring circle {
+  transition: stroke-dashoffset 1s ease;
+}
+.toast {
+  animation: toastIn .2s ease, toastOut .2s ease 2.6s forwards;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+/* Landing Page Visuals */
+.grid-fade {
+  background-image: linear-gradient(#e9eaf3 1px, transparent 1px), linear-gradient(90deg, #e9eaf3 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 65% 40%, black 10%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 65% 40%, black 10%, transparent 75%);
+}
+.drag-tilt {
+  transform: rotate(-2deg);
+  transition: transform 0.2s ease;
+}
+.drag-tilt:hover {
+  transform: rotate(0deg);
+}
+.float-card {
+  animation: float 6s ease-in-out infinite;
+  will-change: transform; /* GPU acceleration - tidak ganggu main thread */
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(-1deg); }
+}
+
+.mobile-menu {
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.nav-slider {
+  position: absolute;
+  bottom: 0;
+  height: 2.5px;
+  background: #3B82F6;
+  border-radius: 2px 2px 0 0;
+  transition: left 0.32s cubic-bezier(0.4,0,0.2,1), width 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease;
+  pointer-events: none;
+}
+.nav-link {
+  position: relative;
+  transition: color 0.2s ease;
+}
+.nav-link.active {
+  color: #3B82F6 !important;
+  font-weight: 600;
+}
+
+.auth-bg {
+  background: radial-gradient(ellipse 80% 60% at 30% 0%, #eef0fb 0%, #f2f3fb 45%, #e7e9f5 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,55 @@
+name: Deploy Laravel to InfinityFree
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Clone repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Siapkan PHP & Composer
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath
+          tools: composer:v2
+
+      # 3. Install Vendor Laravel
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction
+
+      # 4. Siapkan Node.js & Compile Asset (Tailwind/Vite)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install NPM & Build Vite
+        run: |
+          npm install
+          npm run build
+
+      # 5. Kirim file siap pakai ke InfinityFree via FTP
+      - name: FTP Deploy to InfinityFree
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: htdocs/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env
+            .env.example
+            tests/**
+            README.md

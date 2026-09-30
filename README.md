@@ -4,6 +4,23 @@
 
 ---
 
+## 📱 Download & Install Aplikasi Android
+
+KlikBan kini tersedia dalam bentuk aplikasi mobile Android (APK)! Siapapun dapat langsung mengunduh dan memasangnya di smartphone Android:
+
+📥 [**Download KlikBan.apk (Klik di sini)**](https://github.com/rstiandwiynto/project-work-klikban/raw/main/KlikBan.apk)
+
+### 📲 Cara Install di HP Android:
+1. Klik tautan **[Download KlikBan.apk](https://github.com/rstiandwiynto/project-work-klikban/raw/main/KlikBan.apk)** di atas langsung dari browser HP Anda.
+2. Setelah file `.apk` selesai diunduh, ketuk file tersebut untuk membukanya.
+3. Jika muncul notifikasi *"Demi keamanan, ponsel Anda tidak diizinkan menginstal aplikasi tidak dikenal dari sumber ini"*:
+   - Ketuk **Setelan / Pengaturan (Settings)**.
+   - Aktifkan toggle **"Izinkan dari sumber ini" (Allow from this source)**.
+4. Kembali dan ketuk tombol **Install**.
+5. Buka aplikasi **KlikBan** dan langsung login / masuk dengan akun Google Anda!
+
+---
+
 ## ✨ Fitur Utama
 
 - 📋 **Papan Kanban Interaktif**: Kelola tugas berdasarkan kolom status (*To Do*, *In Progress*, *Review*, *Done*) dan tingkat prioritas (*Didahulukan*, *Perlu Diperhatikan*, *Eksternal*, *Biasa*).

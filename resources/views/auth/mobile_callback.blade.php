@@ -14,11 +14,19 @@
     font-family: 'Inter', sans-serif;
     background: radial-gradient(ellipse 80% 60% at 30% 0%, #eef0fb 0%, #f2f3fb 45%, #e7e9f5 100%);
   }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 4px solid rgba(59,130,246,0.15);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body class="min-h-screen flex items-center justify-center px-4 py-10 antialiased">
-  <div class="w-full max-w-[420px] bg-white border border-slate-200/80 rounded-2xl shadow-[0_20px_50px_-15px_rgba(27,27,31,0.12)] p-7 sm:p-9 text-center">
-    
+  <div class="w-full max-w-[380px] bg-white border border-slate-200/80 rounded-2xl shadow-[0_20px_50px_-15px_rgba(27,27,31,0.12)] p-8 text-center">
+
     <!-- Icon -->
     <div class="relative w-20 h-20 mx-auto mb-5 flex items-center justify-center">
       <div class="absolute inset-0 bg-blue-500/10 rounded-full animate-ping opacity-60"></div>
@@ -33,80 +41,54 @@
     <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Login Berhasil!</h1>
     <p class="mt-2 text-sm text-slate-500 leading-relaxed">
       Halo <span class="font-semibold text-slate-700">{{ $user->name ?? 'Pengguna' }}</span>, 
-      sedang membuka KlikBan...
+      Anda sedang diarahkan ke KlikBan...
     </p>
 
-    <!-- Buttons -->
-    <div class="mt-7 space-y-3">
-      @php
-        $token = $token ?? '';
-        $boardUrl = route('board', $token ? ['token' => $token] : []);
-        $intentUrl = 'intent://klikban.site.je/board?token=' . urlencode($token) . '#Intent;scheme=https;package=com.klikban.app;S.browser_fallback_url=' . urlencode($boardUrl) . ';end';
-        $schemeUrl = 'com.klikban.app://board?token=' . urlencode($token);
-      @endphp
+    <!-- Spinner -->
+    <div class="mt-7 flex flex-col items-center gap-3">
+      <div class="spinner"></div>
+      <p id="countdownText" class="text-sm text-slate-400">Mengalihkan dalam <span id="sec">2</span> detik...</p>
+    </div>
 
-      <a id="btnOpenApp" href="{{ $intentUrl }}"
-        class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-semibold py-3.5 px-5 rounded-xl shadow-md shadow-blue-600/20 text-sm">
-        <span>Buka Aplikasi KlikBan</span>
+    <!-- Manual button -->
+    <div class="mt-6">
+      <a id="btnBoard" href="{{ route('board') }}"
+        class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-semibold py-3 px-5 rounded-xl shadow-md shadow-blue-600/20 text-sm">
+        Buka KlikBan Sekarang
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
         </svg>
       </a>
-
-      <div class="pt-1">
-        <a href="{{ $schemeUrl }}" class="text-xs text-blue-500 hover:underline">
-          Aplikasi belum terbuka? Klik di sini
-        </a>
-      </div>
-
-      <p class="text-[12px] text-slate-400">
-        Jika tidak terbuka otomatis, sentuh tombol di atas.
-      </p>
     </div>
 
     <!-- Web fallback -->
-    <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-center gap-4 text-xs text-slate-400">
-      <a href="{{ route('board') }}" class="hover:text-blue-600 transition-colors">Lanjutkan di Browser</a>
-      <span>•</span>
-      <a href="{{ route('home') }}" class="hover:text-blue-600 transition-colors">Beranda</a>
+    <div class="mt-5 text-xs text-slate-400">
+      Jika tidak otomatis, sentuh tombol di atas.
     </div>
   </div>
 
 <script>
-  // Coba buka app otomatis via Intent URL (Android Chrome)
-  const intentUrl = @json($intentUrl ?? '');
-  const schemeUrl = @json($schemeUrl ?? '');
-  const boardUrl  = @json($boardUrl ?? '/board');
+  // Auto redirect ke board setelah 2 detik (server session sudah dibuat)
+  const boardUrl = @json(route('board'));
+  let secs = 2;
 
-  function tryOpenApp() {
-    // Android Chrome Intent URL
-    window.location.href = intentUrl;
+  const secEl = document.getElementById('sec');
+  const interval = setInterval(() => {
+    secs--;
+    if (secEl) secEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(interval);
+      window.location.replace(boardUrl);
+    }
+  }, 1000);
 
-    // Fallback ke custom scheme setelah 500ms
-    setTimeout(function() {
-      window.location.href = schemeUrl;
-    }, 500);
-
-    // Fallback ke board web setelah 3 detik jika app tidak terbuka
-    setTimeout(function() {
-      // Hanya fallback ke web jika halaman ini masih terbuka
-      if (document.visibilityState !== 'hidden') {
-        window.location.href = boardUrl;
-      }
-    }, 3000);
-  }
-
-  // Jalankan otomatis saat halaman dimuat
-  window.addEventListener('load', function() {
-    setTimeout(tryOpenApp, 300);
-  });
-
-  // Tombol manual
-  const btn = document.getElementById('btnOpenApp');
+  // Tombol manual juga langsung ke board
+  const btn = document.getElementById('btnBoard');
   if (btn) {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
-      tryOpenApp();
+      clearInterval(interval);
+      window.location.replace(boardUrl);
     });
   }
 </script>

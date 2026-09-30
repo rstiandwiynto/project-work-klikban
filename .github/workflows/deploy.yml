@@ -44,7 +44,9 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: klikban.site.je/htdocs/
+          local-dir: ./
+          server-dir: htdocs/
+          log-level: verbose
           exclude: |
             **/.git*
             **/.git*/**
@@ -55,3 +57,4 @@ jobs:
             README.md
             android/**
             assets/**
+            *.apk

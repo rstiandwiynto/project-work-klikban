@@ -186,99 +186,140 @@ class AuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
-            return redirect()->route('login')->with('error', 'Login Google gagal. Silakan coba lagi.');
+            return redirect()->route('login')->with('error', 'Login Google gagal: ' . $e->getMessage());
         }
 
-        // Cari user berdasarkan google_id, atau email, atau buat akun baru
-        $user = User::where('google_id', $googleUser->getId())->first()
-            ?? User::where('email', $googleUser->getEmail())->first();
+        try {
+            $hasGoogleId = \Illuminate\Support\Facades\Schema::hasColumn('users', 'google_id');
+            $hasAvatar   = \Illuminate\Support\Facades\Schema::hasColumn('users', 'avatar');
 
-        if ($user) {
-            // Update google_id dan avatar jika belum tersimpan
-            $user->update([
-                'google_id' => $googleUser->getId(),
-                'avatar'    => $googleUser->getAvatar(),
-            ]);
-        } else {
-            // Buat akun baru dari data Google
-            $user = User::create([
-                'name'      => $googleUser->getName(),
-                'email'     => $googleUser->getEmail(),
-                'google_id' => $googleUser->getId(),
-                'avatar'    => $googleUser->getAvatar(),
-                'password'  => null,
-            ]);
+            // Cari user berdasarkan google_id, atau email, atau buat akun baru
+            $user = null;
+            if ($hasGoogleId) {
+                $user = User::where('google_id', $googleUser->getId())->first();
+            }
+            if (!$user) {
+                $user = User::where('email', $googleUser->getEmail())->first();
+            }
 
-            // Buat Workspace awal
-            $wsName    = $user->name . ' Workspace';
-            $workspace = Workspace::create([
-                'name'        => $wsName,
-                'slug'        => Str::slug($wsName) . '-' . Str::random(4),
-                'owner_id'    => $user->id,
-                'description' => 'Workspace utama ' . $user->name,
-                'invite_code' => strtoupper(Str::random(8)),
-            ]);
-            $workspace->members()->attach($user->id, ['role' => 'owner']);
+            if ($user) {
+                $updateData = [];
+                if ($hasGoogleId && empty($user->google_id)) {
+                    $updateData['google_id'] = $googleUser->getId();
+                }
+                if ($hasAvatar && empty($user->avatar)) {
+                    $updateData['avatar'] = $googleUser->getAvatar();
+                }
+                if (!empty($updateData)) {
+                    $user->update($updateData);
+                }
+            } else {
+                // Buat akun baru dari data Google
+                $createData = [
+                    'name'     => $googleUser->getName() ?: 'Pengguna Google',
+                    'email'    => $googleUser->getEmail(),
+                    'password' => bcrypt(Str::random(32)), // Aman dari kolom password NOT NULL
+                ];
+                if ($hasGoogleId) {
+                    $createData['google_id'] = $googleUser->getId();
+                }
+                if ($hasAvatar) {
+                    $createData['avatar'] = $googleUser->getAvatar();
+                }
 
-            // Buat Project awal
-            $project = Project::create([
-                'workspace_id' => $workspace->id,
-                'name'         => 'Proyek Perdana',
-                'slug'         => 'proyek-perdana-' . Str::random(4),
-                'description'  => 'Proyek pertama di workspace ' . $workspace->name,
-                'created_by'   => $user->id,
-            ]);
+                $user = User::create($createData);
 
-            ActivityLog::log(
-                workspaceId: $workspace->id,
-                description: $user->name . ' bergabung via Google dan membuat workspace "' . $workspace->name . '"',
-                badgeText: 'MEMBER JOINED',
-                badgeColor: 'orange',
-                actionType: 'member_joined',
-                projectId: $project->id,
-                userId: $user->id,
-                userName: $user->name
-            );
+                // Buat Workspace awal
+                $wsName    = ($user->name ?: 'My') . ' Workspace';
+                $workspace = Workspace::create([
+                    'name'        => $wsName,
+                    'slug'        => Str::slug($wsName) . '-' . Str::random(4),
+                    'owner_id'    => $user->id,
+                    'description' => 'Workspace utama ' . $user->name,
+                    'invite_code' => strtoupper(Str::random(8)),
+                ]);
+                $workspace->members()->attach($user->id, ['role' => 'owner']);
 
-            session([
-                'active_workspace_id' => $workspace->id,
-                'active_project_id'   => $project->id,
-            ]);
-        }
+                // Buat Project awal
+                $project = Project::create([
+                    'workspace_id' => $workspace->id,
+                    'name'         => 'Proyek Perdana',
+                    'slug'         => 'proyek-perdana-' . Str::random(4),
+                    'description'  => 'Proyek pertama di workspace ' . $workspace->name,
+                    'created_by'   => $user->id,
+                ]);
 
-        // Jika user lama, ambil workspace & project aktifnya
-        if (!session('active_workspace_id')) {
-            $workspace = $user->workspaces()->first();
-            if ($workspace) {
-                $project = $workspace->projects()->first();
+                ActivityLog::log(
+                    workspaceId: $workspace->id,
+                    description: $user->name . ' bergabung via Google dan membuat workspace "' . $workspace->name . '"',
+                    badgeText: 'MEMBER JOINED',
+                    badgeColor: 'orange',
+                    actionType: 'member_joined',
+                    projectId: $project->id,
+                    userId: $user->id,
+                    userName: $user->name
+                );
+
                 session([
                     'active_workspace_id' => $workspace->id,
-                    'active_project_id'   => $project?->id,
+                    'active_project_id'   => $project->id,
                 ]);
             }
-        }
 
-        $state = $request->query('state');
-        $isFromApp = ($state === 'app' 
-            || str_contains($state ?? '', 'app')
-            || $request->cookie('is_klikban_app') === '1');
+            // Jika user lama, ambil workspace & project aktifnya
+            if (!session('active_workspace_id')) {
+                $workspace = $user->workspaces()->first();
+                if ($workspace) {
+                    $project = $workspace->projects()->first();
+                    session([
+                        'active_workspace_id' => $workspace->id,
+                        'active_project_id'   => $project?->id,
+                    ]);
+                }
+            }
 
-        // Jika login berasal dari aplikasi Android (Capacitor), arahkan ke deep link
-        if ($isFromApp) {
-            $token = Crypt::encryptString(json_encode([
+            // Buat token handshake untuk aplikasi mobile
+            $token = Str::random(60);
+            $user->forceFill(['remember_token' => $token])->save();
+
+            // Simpan handshake IP untuk aplikasi mobile
+            $ip = $request->ip();
+            $cacheData = [
                 'user_id' => $user->id,
-                'exp'     => time() + 300,
-            ]));
+                'token'   => $token,
+                'time'    => time(),
+            ];
 
-            return view('auth.mobile_callback', [
-                'token' => $token,
-                'user'  => $user,
-            ]);
+            try {
+                \Illuminate\Support\Facades\Cache::put('pending_app_login_' . md5($ip), $cacheData, 180);
+            } catch (\Throwable $e) {}
+
+            $handshakeDir = storage_path('framework/cache');
+            if (!is_dir($handshakeDir)) {
+                @mkdir($handshakeDir, 0777, true);
+            }
+            @file_put_contents($handshakeDir . '/app_auth_' . md5($ip) . '.json', json_encode($cacheData));
+
+            $state = $request->query('state');
+            $isFromApp = ($state === 'app' 
+                || str_contains($state ?? '', 'app')
+                || $request->cookie('is_klikban_app') === '1');
+
+            Auth::login($user, true);
+            $request->session()->regenerate();
+
+            if ($isFromApp) {
+                return view('auth.mobile_callback', [
+                    'user'  => $user,
+                    'token' => $token,
+                ]);
+            }
+
+            return redirect()->route('board')->with('success', 'Selamat datang, ' . $user->name . '!');
+
+        } catch (\Throwable $e) {
+            return redirect()->route('login')->with('error', 'Terjadi kendala saat login Google: ' . $e->getMessage());
         }
-
-        Auth::login($user, true);
-
-        return redirect()->route('board')->with('success', 'Selamat datang, ' . $user->name . '!');
     }
 
     /**

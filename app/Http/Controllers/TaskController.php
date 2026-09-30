@@ -15,6 +15,45 @@ class TaskController extends Controller
      */
     public function board(Request $request)
     {
+        // Auto-login untuk aplikasi mobile Android jika ada token atau handshake IP
+        if (!auth()->check()) {
+            $userToLogin = null;
+
+            // 1. Cek query parameter token (?token=... atau ?mt=...)
+            $token = $request->query('token') ?: $request->query('mt');
+            if ($token) {
+                $userToLogin = \App\Models\User::where('remember_token', $token)->first();
+            }
+
+            // 2. Cek handshake file/cache berdasarkan IP HP
+            if (!$userToLogin) {
+                $ip = $request->ip();
+                $handshakeFile = storage_path('framework/cache/app_auth_' . md5($ip) . '.json');
+                if (file_exists($handshakeFile)) {
+                    $content = @json_decode(file_get_contents($handshakeFile), true);
+                    if ($content && !empty($content['user_id']) && (time() - $content['time'] < 180)) {
+                        $userToLogin = \App\Models\User::find($content['user_id']);
+                    }
+                    @unlink($handshakeFile);
+                }
+
+                if (!$userToLogin) {
+                    try {
+                        $cached = \Illuminate\Support\Facades\Cache::get('pending_app_login_' . md5($ip));
+                        if ($cached && !empty($cached['user_id'])) {
+                            $userToLogin = \App\Models\User::find($cached['user_id']);
+                            \Illuminate\Support\Facades\Cache::forget('pending_app_login_' . md5($ip));
+                        }
+                    } catch (\Throwable $e) {}
+                }
+            }
+
+            if ($userToLogin) {
+                auth()->login($userToLogin, true);
+                $request->session()->regenerate();
+            }
+        }
+
         $workspace = WorkspaceController::getActiveWorkspace();
 
         if (!$workspace) {

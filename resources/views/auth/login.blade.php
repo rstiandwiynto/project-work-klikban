@@ -80,7 +80,7 @@
               type="email" 
               autocomplete="email" 
               required
-              value="{{ old('email', 'budi@klikban.com') }}"
+              value="{{ old('email') }}"
               placeholder="nama@gmail.com"
               class="focus-ring w-full bg-bg border border-borderc rounded text-body-md text-textmain placeholder:text-textsub/70 pl-11 pr-4 py-3 outline-none transition-colors"
             >

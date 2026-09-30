@@ -19,7 +19,7 @@
 <body class="min-h-screen flex items-center justify-center px-4 py-10 antialiased">
   <div class="w-full max-w-[420px] bg-white border border-slate-200/80 rounded-2xl shadow-[0_20px_50px_-15px_rgba(27,27,31,0.12)] p-7 sm:p-9 text-center">
     
-    <!-- Logo & Status Icon -->
+    <!-- Icon -->
     <div class="relative w-20 h-20 mx-auto mb-5 flex items-center justify-center">
       <div class="absolute inset-0 bg-blue-500/10 rounded-full animate-ping opacity-60"></div>
       <div class="w-16 h-16 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center text-white">
@@ -29,18 +29,22 @@
       </div>
     </div>
 
-    <!-- Title & Description -->
+    <!-- Title -->
     <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Login Berhasil!</h1>
     <p class="mt-2 text-sm text-slate-500 leading-relaxed">
-      Halo <span class="font-semibold text-slate-700">{{ $user->name ?? 'Pengguna' }}</span>, kami sedang mengalihkan Anda kembali ke aplikasi KlikBan di HP Anda...
+      Halo <span class="font-semibold text-slate-700">{{ $user->name ?? 'Pengguna' }}</span>, 
+      sedang membuka KlikBan...
     </p>
 
-    <!-- Main Button -->
+    <!-- Buttons -->
     <div class="mt-7 space-y-3">
       @php
-        $intentUrl = 'intent://auth/callback?token=' . urlencode($token) . '#Intent;scheme=com.klikban.app;package=com.klikban.app;end';
-        $schemeUrl = 'com.klikban.app://auth/callback?token=' . urlencode($token);
+        $token = $token ?? '';
+        $boardUrl = route('board', $token ? ['token' => $token] : []);
+        $intentUrl = 'intent://klikban.site.je/board?token=' . urlencode($token) . '#Intent;scheme=https;package=com.klikban.app;S.browser_fallback_url=' . urlencode($boardUrl) . ';end';
+        $schemeUrl = 'com.klikban.app://board?token=' . urlencode($token);
       @endphp
+
       <a id="btnOpenApp" href="{{ $intentUrl }}"
         class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-semibold py-3.5 px-5 rounded-xl shadow-md shadow-blue-600/20 text-sm">
         <span>Buka Aplikasi KlikBan</span>
@@ -51,56 +55,60 @@
 
       <div class="pt-1">
         <a href="{{ $schemeUrl }}" class="text-xs text-blue-500 hover:underline">
-          Aplikasi belum terbuka? Klik tautan ini
+          Aplikasi belum terbuka? Klik di sini
         </a>
       </div>
 
       <p class="text-[12px] text-slate-400">
-        Jika aplikasi tidak terbuka otomatis, silakan sentuh tombol di atas.
+        Jika tidak terbuka otomatis, sentuh tombol di atas.
       </p>
     </div>
 
-    <!-- Web fallback link -->
+    <!-- Web fallback -->
     <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-center gap-4 text-xs text-slate-400">
-      <a href="{{ route('board') }}" class="hover:text-blue-600 transition-colors">Lanjutkan di Web Browser</a>
+      <a href="{{ route('board') }}" class="hover:text-blue-600 transition-colors">Lanjutkan di Browser</a>
       <span>•</span>
       <a href="{{ route('home') }}" class="hover:text-blue-600 transition-colors">Beranda</a>
     </div>
   </div>
 
 <script>
-  const token = @json($token);
-  const encodedToken = encodeURIComponent(token);
-  
-  // Standard Custom Scheme for KlikBan
-  const schemeUrl = "com.klikban.app://auth/callback?token=" + encodedToken;
-  
-  // Android Intent URI (best compatibility across Android Chrome)
-  const intentUrl = "intent://auth/callback?token=" + encodedToken + "#Intent;scheme=com.klikban.app;package=com.klikban.app;end";
+  // Coba buka app otomatis via Intent URL (Android Chrome)
+  const intentUrl = @json($intentUrl ?? '');
+  const schemeUrl = @json($schemeUrl ?? '');
+  const boardUrl  = @json($boardUrl ?? '/board');
 
-  // Bind to button
+  function tryOpenApp() {
+    // Android Chrome Intent URL
+    window.location.href = intentUrl;
+
+    // Fallback ke custom scheme setelah 500ms
+    setTimeout(function() {
+      window.location.href = schemeUrl;
+    }, 500);
+
+    // Fallback ke board web setelah 3 detik jika app tidak terbuka
+    setTimeout(function() {
+      // Hanya fallback ke web jika halaman ini masih terbuka
+      if (document.visibilityState !== 'hidden') {
+        window.location.href = boardUrl;
+      }
+    }, 3000);
+  }
+
+  // Jalankan otomatis saat halaman dimuat
+  window.addEventListener('load', function() {
+    setTimeout(tryOpenApp, 300);
+  });
+
+  // Tombol manual
   const btn = document.getElementById('btnOpenApp');
   if (btn) {
-    btn.href = intentUrl;
     btn.addEventListener('click', function(e) {
-      // Fallback if intent fails on some browsers
-      setTimeout(function() {
-        window.location.href = schemeUrl;
-      }, 500);
+      e.preventDefault();
+      tryOpenApp();
     });
   }
-
-  // Automatic redirect attempt
-  try {
-    window.location.href = intentUrl;
-  } catch (err) {
-    window.location.href = schemeUrl;
-  }
-
-  // Second attempt fallback with scheme after 500ms
-  setTimeout(function() {
-    window.location.href = schemeUrl;
-  }, 500);
 </script>
 </body>
 </html>

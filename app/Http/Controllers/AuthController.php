@@ -15,45 +15,11 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    public function showLogin(Request $request)
+    public function showLogin()
     {
         if (Auth::check()) {
             return redirect()->route('board');
         }
-
-        // Auto-login jika datang dari mobile app (berdasarkan token atau handshake IP)
-        $token = $request->query('token') ?: $request->query('mt');
-        $userToLogin = null;
-        if ($token) {
-            $userToLogin = User::where('remember_token', $token)->first();
-        }
-
-        if (!$userToLogin) {
-            $ip = $request->ip();
-            $handshakeFile = storage_path('framework/cache/app_auth_' . md5($ip) . '.json');
-            if (file_exists($handshakeFile)) {
-                $content = @json_decode(file_get_contents($handshakeFile), true);
-                if ($content && !empty($content['user_id']) && (time() - $content['time'] < 300)) {
-                    $userToLogin = User::find($content['user_id']);
-                }
-            }
-
-            if (!$userToLogin) {
-                try {
-                    $cached = \Illuminate\Support\Facades\Cache::get('pending_app_login_' . md5($ip));
-                    if ($cached && !empty($cached['user_id'])) {
-                        $userToLogin = User::find($cached['user_id']);
-                    }
-                } catch (\Throwable $e) {}
-            }
-        }
-
-        if ($userToLogin) {
-            Auth::login($userToLogin, true);
-            $request->session()->regenerate();
-            return redirect()->route('board');
-        }
-
         return view('auth.login');
     }
 

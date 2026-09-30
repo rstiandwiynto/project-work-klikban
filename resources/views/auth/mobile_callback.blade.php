@@ -44,16 +44,14 @@
     @php
       $token = $token ?? '';
       $encodedToken = urlencode($token);
-      $webFallback = urlencode(url('/board?token=' . $encodedToken));
-      $intentUrl = 'intent://klikban.site.je/board?token=' . $encodedToken . '#Intent;scheme=https;package=com.klikban.app;S.browser_fallback_url=' . $webFallback . ';end';
       $schemeUrl = 'com.klikban.app://board?token=' . $encodedToken;
-      $directUrl = url('/board?token=' . $encodedToken);
+      $intentUrl = 'intent://board?token=' . $encodedToken . '#Intent;scheme=com.klikban.app;package=com.klikban.app;S.browser_fallback_url=' . urlencode(route('board')) . ';end';
     @endphp
 
     <!-- Action buttons -->
     <div class="mt-6 space-y-3">
       <!-- Tombol Utama Buka Aplikasi -->
-      <a id="btnOpenApp" href="{{ $intentUrl }}"
+      <a id="btnOpenApp" href="{{ $schemeUrl }}"
         class="w-full inline-flex items-center justify-center gap-2.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-blue-600/25 text-base">
         <span>Buka Aplikasi KlikBan</span>
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -61,39 +59,36 @@
         </svg>
       </a>
 
-      <!-- Fallback custom scheme -->
+      <p class="text-[12px] text-slate-500">
+        Sentuh tombol biru di atas untuk langsung membuka aplikasi KlikBan.
+      </p>
+
       <div class="pt-2">
-        <a id="btnScheme" href="{{ $schemeUrl }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 underline">
-          Aplikasi belum terbuka? Sentuh di sini (Buka Langsung)
+        <a href="{{ $intentUrl }}" class="text-xs font-semibold text-blue-600 hover:underline">
+          Atau klik di sini jika aplikasi belum terbuka otomatis
         </a>
       </div>
-
-      <p class="text-[12px] text-slate-400">
-        Ketuk tombol biru di atas untuk kembali ke aplikasi KlikBan di HP Anda.
-      </p>
     </div>
 
     <!-- Web fallback link -->
     <div class="mt-8 pt-4 border-t border-slate-100 text-xs text-slate-400">
-      <a href="{{ $directUrl }}" class="hover:text-blue-600 hover:underline transition-colors font-medium">
-        Atau lanjut buka di browser Chrome ini
+      <a href="{{ route('board') }}" class="hover:text-blue-600 hover:underline transition-colors">
+        Lanjutkan di browser ini
       </a>
     </div>
   </div>
 
 <script>
-  const intentUrl = @json($intentUrl);
   const schemeUrl = @json($schemeUrl);
+  const intentUrl = @json($intentUrl);
 
-  function launchApp() {
-    try {
-      window.location.href = intentUrl;
-    } catch(e) {}
+  function openApp() {
+    window.location.href = schemeUrl;
   }
 
   // Trigger otomatis pembukaan aplikasi saat halaman termuat
   window.addEventListener('load', function() {
-    setTimeout(launchApp, 400);
+    setTimeout(openApp, 300);
   });
 </script>
 </body>

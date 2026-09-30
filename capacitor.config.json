@@ -1,0 +1,14 @@
+{
+  "appId": "com.klikban.app",
+  "appName": "KlikBan",
+  "webDir": "public",
+  "server": {
+    "url": "https://klikban.site.je",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#ffffff",
+    "appendUserAgent": " KlikBan-Android-App"
+  }
+}

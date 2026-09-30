@@ -26,6 +26,7 @@ Route::get('/logout', [AuthController::class, 'logout']); // fallback
 // Google OAuth Routes
 Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('auth.google.callback');
+Route::get('/auth/mobile-login', [AuthController::class, 'mobileLogin'])->name('auth.mobile-login');
 
 // Direct Invitation Link (Shareable by Admin)
 Route::get('/workspaces/join-link/{code}', [WorkspaceController::class, 'joinLink'])->name('workspaces.join-link');

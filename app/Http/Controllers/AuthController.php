@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -161,15 +162,23 @@ class AuthController extends Controller
     /**
      * Redirect pengguna ke halaman login Google.
      */
-    public function googleRedirect()
+    public function googleRedirect(Request $request)
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        $isApp = $request->query('source') === 'app' 
+            || str_contains($request->header('User-Agent', ''), 'KlikBan');
+
+        $driver = Socialite::driver('google')->stateless();
+        if ($isApp) {
+            $driver->with(['state' => 'app']);
+        }
+
+        return $driver->redirect();
     }
 
     /**
      * Terima callback dari Google dan proses login / registrasi akun.
      */
-    public function googleCallback()
+    public function googleCallback(Request $request)
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
@@ -246,9 +255,67 @@ class AuthController extends Controller
             }
         }
 
+        $state = $request->query('state');
+        $isFromApp = ($state === 'app' || str_contains($state ?? '', 'app'));
+
+        // Jika login berasal dari aplikasi Android (Capacitor), arahkan ke deep link
+        if ($isFromApp) {
+            $token = Crypt::encryptString(json_encode([
+                'user_id' => $user->id,
+                'exp'     => time() + 300,
+            ]));
+
+            return view('auth.mobile_callback', [
+                'token' => $token,
+                'user'  => $user,
+            ]);
+        }
+
         Auth::login($user, true);
 
         return redirect()->route('board')->with('success', 'Selamat datang, ' . $user->name . '!');
+    }
+
+    /**
+     * Terima login dari deep link aplikasi Android (Capacitor).
+     */
+    public function mobileLogin(Request $request)
+    {
+        $token = $request->query('token');
+        if (!$token) {
+            return redirect()->route('login')->with('error', 'Token login tidak valid.');
+        }
+
+        try {
+            $payload = json_decode(Crypt::decryptString($token), true);
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('error', 'Token autentikasi tidak valid atau rusak.');
+        }
+
+        if (empty($payload['user_id']) || empty($payload['exp']) || time() > $payload['exp']) {
+            return redirect()->route('login')->with('error', 'Sesi login telah kedaluwarsa. Silakan coba lagi.');
+        }
+
+        $user = User::find($payload['user_id']);
+        if (!$user) {
+            return redirect()->route('login')->with('error', 'Pengguna tidak ditemukan.');
+        }
+
+        if (!session('active_workspace_id')) {
+            $workspace = $user->workspaces()->first();
+            if ($workspace) {
+                $project = $workspace->projects()->first();
+                session([
+                    'active_workspace_id' => $workspace->id,
+                    'active_project_id'   => $project?->id,
+                ]);
+            }
+        }
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+
+        return redirect()->route('board')->with('success', 'Selamat datang di Aplikasi KlikBan, ' . $user->name . '!');
     }
 
     public function logout(Request $request)

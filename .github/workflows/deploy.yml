@@ -53,3 +53,5 @@ jobs:
             .env.example
             tests/**
             README.md
+            android/**
+            assets/**

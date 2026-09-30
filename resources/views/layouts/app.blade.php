@@ -181,6 +181,14 @@
 
       <!-- ===================== SIDEBAR ===================== -->
       <aside id="sidebar" class="sidebar w-[255px] shrink-0 bg-surface border-r border-borderc flex flex-col pt-5 px-4 overflow-y-auto">
+        <!-- Mobile Sidebar Close Header -->
+        <div class="flex items-center justify-between pb-3 mb-2 border-b border-borderc lg:hidden shrink-0">
+          <span class="text-[12px] font-bold text-textsub uppercase tracking-wider">Menu Navigasi</span>
+          <button id="sidebarClose" type="button" class="w-8 h-8 flex items-center justify-center rounded text-textsub hover:text-textmain hover:bg-bg transition-colors" aria-label="Tutup menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+
         <!-- Workspace Header Card (Clickable to switch workspace) -->
         <div onclick="openModal('modal-switch-workspace')" role="button" tabindex="0" class="group flex items-center gap-3 p-2 -mx-1 rounded-card hover:bg-blue-50/60 border border-transparent hover:border-blue-200 transition-all cursor-pointer mb-4" title="Klik untuk ganti workspace">
           <div class="w-10 h-10 rounded bg-primary text-white flex items-center justify-center font-extrabold text-[15px] shrink-0 shadow-sm">
@@ -711,7 +719,7 @@
 
     <!-- 5. Modal Kelola & Anggota Tim -->
     @if(isset($workspace))
-    <div id="modal-add-member" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-black/50 overflow-y-auto">
+    <div id="modal-add-member" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-3 sm:p-4 bg-black/50 overflow-y-auto">
         <div class="modal-panel bg-surface rounded-card max-w-lg w-full border border-borderc overflow-hidden shadow-2xl my-auto max-h-[90vh] flex flex-col">
             <!-- Modal Header -->
             <div class="px-5 py-3.5 border-b border-borderc flex items-center justify-between bg-bg shrink-0">
@@ -903,6 +911,18 @@
             });
         }
 
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+            }
+            if (backdrop) {
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 200);
+            }
+        }
+
         function initMobileSidebar() {
             const toggleBtn = document.getElementById('sidebarToggle');
             const closeBtn = document.getElementById('sidebarClose');
@@ -916,19 +936,16 @@
                     setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
                 };
 
-                const closeSidebar = () => {
-                    sidebar.classList.remove('open');
-                    backdrop.classList.add('opacity-0');
-                    setTimeout(() => backdrop.classList.add('hidden'), 200);
-                };
-
                 toggleBtn.addEventListener('click', openSidebar);
-                if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-                backdrop.addEventListener('click', closeSidebar);
+                if (closeBtn) closeBtn.addEventListener('click', closeMobileSidebar);
+                backdrop.addEventListener('click', closeMobileSidebar);
             }
         }
 
         function openModal(id) {
+            // Tutup sidebar mobile otomatis jika sedang terbuka agar tidak menutupi modal
+            closeMobileSidebar();
+
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('hidden');
@@ -939,6 +956,23 @@
             if (!modal) return;
             modal.classList.add('hidden');
         }
+
+        // Tutup modal otomatis saat pengguna menyentuh area gelap (backdrop) di luar modal
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('fixed') && e.target.id && e.target.id.startsWith('modal-')) {
+                closeModal(e.target.id);
+            }
+        });
+
+        // Tutup modal atau sidebar saat tombol Escape ditekan
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeMobileSidebar();
+                document.querySelectorAll('[id^="modal-"]:not(.hidden)').forEach(modal => {
+                    modal.classList.add('hidden');
+                });
+            }
+        });
 
         function switchWorkspaceModalTab(tabId) {
             document.querySelectorAll('.ws-modal-tab-content').forEach(el => el.classList.add('hidden'));

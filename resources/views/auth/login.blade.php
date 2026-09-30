@@ -143,7 +143,12 @@
       @endif
 
       @php
-        $isFromMobileApp = str_contains(request()->header('User-Agent', ''), 'KlikBan') || request()->has('is_app');
+        $ua = request()->header('User-Agent', '');
+        $isFromMobileApp = str_contains($ua, 'KlikBan') 
+            || str_contains($ua, 'wv') 
+            || request()->cookie('is_klikban_app') === '1' 
+            || request()->has('is_app') 
+            || request()->has('source');
       @endphp
 
       <!-- Google OAuth Button -->
@@ -210,11 +215,15 @@
   }
 
   // Deteksi jika dibuka dari aplikasi mobile Android KlikBan
-  if (navigator.userAgent.includes('KlikBan') || window.Capacitor !== undefined) {
-    const googleBtn = document.getElementById('googleLoginBtn');
-    if (googleBtn) {
-      googleBtn.href = "{{ route('auth.google', ['source' => 'app']) }}";
-    }
+  const isMobileApp = navigator.userAgent.includes('KlikBan') || 
+                      navigator.userAgent.includes('; wv') || 
+                      document.cookie.includes('is_klikban_app') || 
+                      window.Capacitor !== undefined ||
+                      window.location.search.includes('source=app');
+
+  const googleBtn = document.getElementById('googleLoginBtn');
+  if (googleBtn && isMobileApp) {
+    googleBtn.href = "{{ route('auth.google', ['source' => 'app']) }}";
   }
 </script>
 </body>

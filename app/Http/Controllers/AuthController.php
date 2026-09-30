@@ -164,8 +164,11 @@ class AuthController extends Controller
      */
     public function googleRedirect(Request $request)
     {
+        $ua = $request->header('User-Agent', '');
         $isApp = $request->query('source') === 'app' 
-            || str_contains($request->header('User-Agent', ''), 'KlikBan');
+            || str_contains($ua, 'KlikBan')
+            || str_contains($ua, 'wv')
+            || $request->cookie('is_klikban_app') === '1';
 
         $driver = Socialite::driver('google')->stateless();
         if ($isApp) {
@@ -256,7 +259,9 @@ class AuthController extends Controller
         }
 
         $state = $request->query('state');
-        $isFromApp = ($state === 'app' || str_contains($state ?? '', 'app'));
+        $isFromApp = ($state === 'app' 
+            || str_contains($state ?? '', 'app')
+            || $request->cookie('is_klikban_app') === '1');
 
         // Jika login berasal dari aplikasi Android (Capacitor), arahkan ke deep link
         if ($isFromApp) {

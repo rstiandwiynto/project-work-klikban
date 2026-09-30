@@ -37,13 +37,23 @@
 
     <!-- Main Button -->
     <div class="mt-7 space-y-3">
-      <a id="btnOpenApp" href="#"
+      @php
+        $intentUrl = 'intent://auth/callback?token=' . urlencode($token) . '#Intent;scheme=com.klikban.app;package=com.klikban.app;end';
+        $schemeUrl = 'com.klikban.app://auth/callback?token=' . urlencode($token);
+      @endphp
+      <a id="btnOpenApp" href="{{ $intentUrl }}"
         class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-semibold py-3.5 px-5 rounded-xl shadow-md shadow-blue-600/20 text-sm">
         <span>Buka Aplikasi KlikBan</span>
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
         </svg>
       </a>
+
+      <div class="pt-1">
+        <a href="{{ $schemeUrl }}" class="text-xs text-blue-500 hover:underline">
+          Aplikasi belum terbuka? Klik tautan ini
+        </a>
+      </div>
 
       <p class="text-[12px] text-slate-400">
         Jika aplikasi tidak terbuka otomatis, silakan sentuh tombol di atas.

@@ -44,9 +44,10 @@
     @php
       $token = $token ?? '';
       $encodedToken = urlencode($token);
-      $intentUrl = 'intent://board?token=' . $encodedToken . '#Intent;scheme=com.klikban.app;package=com.klikban.app;end';
+      $webFallback = urlencode(url('/board?token=' . $encodedToken));
+      $intentUrl = 'intent://klikban.site.je/board?token=' . $encodedToken . '#Intent;scheme=https;package=com.klikban.app;S.browser_fallback_url=' . $webFallback . ';end';
       $schemeUrl = 'com.klikban.app://board?token=' . $encodedToken;
-      $altSchemeUrl = 'klikban://board?token=' . $encodedToken;
+      $directUrl = url('/board?token=' . $encodedToken);
     @endphp
 
     <!-- Action buttons -->
@@ -63,19 +64,19 @@
       <!-- Fallback custom scheme -->
       <div class="pt-2">
         <a id="btnScheme" href="{{ $schemeUrl }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700 underline">
-          Aplikasi belum terbuka? Sentuh di sini
+          Aplikasi belum terbuka? Sentuh di sini (Buka Langsung)
         </a>
       </div>
 
       <p class="text-[12px] text-slate-400">
-        Ketuk tombol biru di atas untuk kembali ke aplikasi KlikBan dan mulai mengelola tugas.
+        Ketuk tombol biru di atas untuk kembali ke aplikasi KlikBan di HP Anda.
       </p>
     </div>
 
     <!-- Web fallback link -->
     <div class="mt-8 pt-4 border-t border-slate-100 text-xs text-slate-400">
-      <a href="{{ route('board') }}" class="hover:text-blue-600 hover:underline transition-colors">
-        Atau buka versi web di browser ini
+      <a href="{{ $directUrl }}" class="hover:text-blue-600 hover:underline transition-colors font-medium">
+        Atau lanjut buka di browser Chrome ini
       </a>
     </div>
   </div>
@@ -83,43 +84,17 @@
 <script>
   const intentUrl = @json($intentUrl);
   const schemeUrl = @json($schemeUrl);
-  const altSchemeUrl = @json($altSchemeUrl);
 
   function launchApp() {
-    // 1. Coba Android Chrome Intent URL
     try {
       window.location.href = intentUrl;
     } catch(e) {}
-
-    // 2. Coba custom scheme jika intent tidak merespon
-    setTimeout(function() {
-      try {
-        window.location.href = schemeUrl;
-      } catch(e) {}
-    }, 500);
-
-    // 3. Coba alternate scheme
-    setTimeout(function() {
-      try {
-        window.location.href = altSchemeUrl;
-      } catch(e) {}
-    }, 1200);
   }
 
-  // Trigger otomatis saat halaman terbuka
+  // Trigger otomatis pembukaan aplikasi saat halaman termuat
   window.addEventListener('load', function() {
-    setTimeout(launchApp, 300);
+    setTimeout(launchApp, 400);
   });
-
-  // Listener tombol manual
-  const btn = document.getElementById('btnOpenApp');
-  if (btn) {
-    btn.addEventListener('click', function(e) {
-      setTimeout(function() {
-        window.location.href = schemeUrl;
-      }, 500);
-    });
-  }
 </script>
 </body>
 </html>
